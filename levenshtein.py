@@ -1,11 +1,13 @@
-
-
 import numpy as np
 import os
 from time import time
 
 
 def levenshtein(s, t):
+    '''
+    Inputs: 2 str to be compared
+    Output: Levenshtein path matrix, composed of D, I and S.
+    '''
     
     m = len(s)
     n = len(t)
@@ -43,7 +45,12 @@ def levenshtein(s, t):
     return pathMatrix
 
 def alignment(s, t, pathMatrix):
-    
+    '''
+    Inputs: 2 str and the Levenshtein path matrix
+    Output: matrice d'alignement avec 2 lignes, chaque ligne contient
+        les caractères de son str, avec éventuellement des ' ' pour I et D.
+        On remplit en partant de la fin, le début est donc souvent vide.
+    '''
     m = len(s)
     n = len(t)
     align = np.empty((2, m+n), dtype=str)
@@ -67,13 +74,17 @@ def alignment(s, t, pathMatrix):
             j -= 1
         direction = pathMatrix[i][j]
         k -= 1
-        
-    #print(align)
+
     return align
 
 
-def compare(s, t, align, n_display=130):
-    
+def compare(s, t, align, n_display=60):
+    '''
+    Inputs: 2 str, matrice d'alignement, n_display=nombre de caractères
+        à afficher sur une ligne.
+    Output: Nouvelles chaînes de caractères avec '-' pour visualiser
+        l'alignement.
+    '''
     m, n = len(s), len(t)  # virer t et s, on a déjà l'info m+n
     s2, t2 = '', ''
     for k in range(m+n):
@@ -95,74 +106,116 @@ def compare(s, t, align, n_display=130):
     
     return s2, t2
 
-def compare2(s, t, align):
+
+def differences(s, t, align, seuil):
+    '''
+    Inputs: 2 str, matrice d'alignement, seuil = nombre de caractères égaux
+        consécutifs qu'on autorise au sein d'une différence.
+    Algo: parcourt la matrice d'alignement et enregistre les différences en 
+        levant des flags.
+    Outputs: 2 listes de différences, une différence correspond à un indice i,
+        la partie de s est l_s[i] et celle de t l_s[i].
+    '''
     m, n = len(s), len(t)
-    in_modif = False
     l_s, l_t = [], []
+    inDiff = align[0][0] != align[1][0]
+    flagEqual = False
+    equalStr = ''
     
     for k in range(m+n):
         s_car, t_car = align[0][k], align[1][k]
         
-        if not in_modif:
-            if s_car != t_car:
-                in_modif = True
-                l_s.append(s_car)
-                l_t.append(t_car)
-        else:
+        if inDiff:
             if s_car == t_car:
-                in_modif = False
+                if flagEqual:
+                    if len(equalStr) >= seuil:
+                        # Fin de la différence
+                        flagEqual= False
+                        inDiff = False
+                        equalStr = ''
+                    else:
+                        # Contribution à la période d'égalité
+                        equalStr += s_car
+                else:
+                    if seuil == 0:
+                        inDiff = False
+                    else:
+                        #Initialisation d'une période d'égalité
+                        flagEqual = True
+                        equalStr = s_car
             else:
+                if flagEqual:
+                    # Contribution de la période d'égalité à la différence
+                    l_s[-1] += equalStr
+                    l_t[-1] += equalStr
+                    flagEqual = False
+                    equalStr = ''
+                # Contribution à la différence
                 l_s[-1] += s_car
                 l_t[-1] += t_car
-    
+        else:
+            if s_car != t_car:
+                # Init d'une nouvelle différence
+                inDiff = True
+                l_s.append(s_car)
+                l_t.append(t_car)
+
     for k in range(len(l_s)):
-        print('\n Modif', k, "len", len(l_s[k]), len(l_t[k]))
-        print('S', l_s[k])
-        print('T', l_t[k])
+        modif = '\n-----Modif {}, len {} {}-----\nS: {}\nT: {}'
+        print(modif.format(k, len(l_s[k]), len(l_t[k]), l_s[k], l_t[k]))
     
-    return 
-        
-        
+    return l_s, l_t
         
 
 
 if __name__ == "__main__":
     
-    #s = "levenshtein"
-    #t = "meilenstein"
-    s = "CTATCACCTGACCTCCAGGCCGATGCCCCTTCCGGC"
-    t = "GCGAGTTCATCTATCACGACCGCGGTCG"
+    '''
+    s = 'BBBBBAAAAAACADAAEAAAF'
+    t = 'AAAAAAAAAAAAAAAAAAAAA'
     
-    #path = levenshtein(s, t)
-    #align = alignment(s, t, path)
-    #compare = compare(s, t, align)
+    path = levenshtein(s, t)
+    align = alignment(s, t, path)
+    compare(s, t, align)
+    differences(s, t, align, 1)
+    '''
     
-    path = "../../../data/hermit-dump/"
+    
+    
+    # HERMIT EX
+    path = "/media/louis/TOSHIBA EXT/data/hermit-dump/"
     page_id = 1284561
     rev1_id = 8483054
     rev2_id = 8483079
-    
     path_rev1 = os.path.join(path, str(page_id), str(rev1_id))
     path_rev2 = os.path.join(path, str(page_id), str(rev2_id))
     
+    # SENTENCE EX
+    path_rev1 = "/media/louis/TOSHIBA EXT/data/sentence/1"
+    path_rev2 = "/media/louis/TOSHIBA EXT/data/sentence/2"
+    
+    # READ DATA
     rev1 = open(path_rev1, "r")
     rev2 = open(path_rev2, "r")
-    
     r1 = rev1.read()
     r2 = rev2.read()
     
+    # LEVENSHTEIN
     t0 = time()
     path = levenshtein(r1, r2)
     t1 = time()
     print("levenhstein:", t1-t0)
     
+    # ALIGN
     align = alignment(r1, r2, path)
-    t2 = time()
-    print("alignment:", t2-t1)
     
-    my_compare = compare2(r1, r2, align)
-    t3 = time()
-    print("compare:", t3-t2)
+    # COMPARE
+    compare(r1, r2, align)
+    
+    # DIFF
+    for seuil in [0, 2, 5, 10]:
+        print("\n SEUIL {}".format(seuil))
+        differences(r1, r2, align, seuil)
     
     rev1.close()
     rev2.close()
