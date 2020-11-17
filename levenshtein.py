@@ -1,14 +1,29 @@
 import numpy as np
 import os
 from time import time
+import csv
 
+def opti(s, t):
+    '''
+    Suppression du préfixe commun, et du suffixe commun.
+    '''
+    a = 0
+    while s[a] == t[a]:
+        a += 1
+    if s[-1] != t[-1]:
+        return s[a:], t[a:]
+    else:
+        z = 0
+        while s[z-1] == t[z-1]:
+            z -= 1
+    return s[a:z],t[a:z]
+    
 
 def levenshtein(s, t):
     '''
     Inputs: 2 str to be compared
     Output: Levenshtein path matrix, composed of D, I and S.
     '''
-    
     m = len(s)
     n = len(t)
     
@@ -44,6 +59,7 @@ def levenshtein(s, t):
         #print(pathMatrix)
     return pathMatrix
 
+
 def alignment(s, t, pathMatrix):
     '''
     Inputs: 2 str and the Levenshtein path matrix
@@ -74,8 +90,15 @@ def alignment(s, t, pathMatrix):
             j -= 1
         direction = pathMatrix[i][j]
         k -= 1
+        
+    a = 0
+    while align[0][a] == align[1][a]:
+        a += 1
+    new_align = np.empty((2, m+n-a), dtype=str)
+    new_align[0] = align[0][a:]
+    new_align[1] = align[1][a:]
 
-    return align
+    return new_align
 
 
 def compare(s, t, align, n_display=60):
@@ -85,9 +108,8 @@ def compare(s, t, align, n_display=60):
     Output: Nouvelles chaînes de caractères avec '-' pour visualiser
         l'alignement.
     '''
-    m, n = len(s), len(t)  # virer t et s, on a déjà l'info m+n
     s2, t2 = '', ''
-    for k in range(m+n):
+    for k in range(align.shape[1]):
         s_car, t_car = align[0][k], align[1][k]
         if s_car != '' or t_car != '':
             if s_car == '':
@@ -107,79 +129,123 @@ def compare(s, t, align, n_display=60):
     return s2, t2
 
 
-def differences(s, t, align, seuil):
+def differences(s, t, align, seuil, cont):
     '''
-    Inputs: 2 str, matrice d'alignement, seuil = nombre de caractères égaux
-        consécutifs qu'on autorise au sein d'une différence.
-    Algo: parcourt la matrice d'alignement et enregistre les différences en 
-        levant des flags.
-    Outputs: 2 listes de différences, une différence correspond à un indice i,
-        la partie de s est l_s[i] et celle de t l_s[i].
-    '''
-    m, n = len(s), len(t)
-    l_s, l_t = [], []
-    inDiff = align[0][0] != align[1][0]
-    flagEqual = False
-    equalStr = ''
-    
-    for k in range(m+n):
-        s_car, t_car = align[0][k], align[1][k]
+    Inputs: 2 str, matrice d'alignement,
+        seuil = nombre de caractères égaux consécutifs qu'on autorise au sein
+        d'une différence.
+        cont = nombre de caractères de contexte qu'on garde de chaque côté.
+    Outputs: liste de différences. Chaque différence est une liste de 4:
+        (texte de s, texte de t, contexte à G, contexte à D).
         
-        if inDiff:
-            if s_car == t_car:
-                if flagEqual:
-                    if len(equalStr) >= seuil:
-                        # Fin de la différence
-                        flagEqual= False
-                        inDiff = False
-                        equalStr = ''
-                    else:
-                        # Contribution à la période d'égalité
-                        equalStr += s_car
-                else:
-                    if seuil == 0:
-                        inDiff = False
-                    else:
-                        #Initialisation d'une période d'égalité
-                        flagEqual = True
-                        equalStr = s_car
-            else:
-                if flagEqual:
-                    # Contribution de la période d'égalité à la différence
-                    l_s[-1] += equalStr
-                    l_t[-1] += equalStr
-                    flagEqual = False
-                    equalStr = ''
-                # Contribution à la différence
-                l_s[-1] += s_car
-                l_t[-1] += t_car
-        else:
-            if s_car != t_car:
-                # Init d'une nouvelle différence
-                inDiff = True
-                l_s.append(s_car)
-                l_t.append(t_car)
+    Remarques sur le contexte:
+        1. on prend celui de s
+        2. les préfixe/suffixe communs de s et t sont déjà supprimés donc
+        ils ne font pas partie du contexte. La 1ère différence n'a pas le
+        contexte avant, et la dernière le contexte après.
+    '''
+    # Construction de tuples, qui permet d'obtenir les indices des séquences
+    # ininterrompues de caractères différents (resp. égaux) dans align.
+    equals = [align[0][k] == align[1][k] for k in range(align.shape[1])]
+    flag = [equals[k] != equals[k+1] for k in range(align.shape[1]-1)]
+    index = []
+    for i in range(len(flag)):
+        if flag[i] == True:
+            index.append(i+1)    
+    index = [0] + index + [align.shape[1]]
+    tuples = [(index[i], index[i+1]) for i in range(len(index)-1)]
 
-    for k in range(len(l_s)):
-        modif = '\n-----Modif {}, len {} {}-----\nS: {}\nT: {}'
-        print(modif.format(k, len(l_s[k]), len(l_t[k]), l_s[k], l_t[k]))
+    # Construction de index_diffs, liste de couples d'indices start,end 
+    # pour chaque différence. C'est ici qu'on regarde si une séquence de 
+    # caractères égaux est conservée dans une différence.
+    index_diff = []
+    start = 0
+    inDiff = True
+    for i in range(0, len(tuples)-2, 2):
+        change = tuples[i]
+        equal = tuples[i+1]        
+        if inDiff:
+            if equal[1] - equal[0] > seuil:
+                # End diff
+                index_diff.append((start,change[1]))
+                inDiff = False
+        else:
+            # Start diff
+            start = change[0]
+            inDiff = True
+            if equal[1] - equal[0] > seuil:
+                # End diff
+                index_diff.append((start,change[1]))
+                inDiff = False
+    # Dernier tuple
+    change = tuples[-1]
+    if inDiff:
+        index_diff.append((start,change[1]))
+    else:
+        index_diff.append(change)
+
+    # Sauvegarde des str
+    l_diffs = []
+    for ind in index_diff:
+        i0, i1 = ind[0], ind[1]
+        sDiff, tDiff, contG, contD = '', '', '', ''
+        for c in align[0][i0:i1]:
+            sDiff += c
+        for c in align[1][i0:i1]:
+            tDiff += c
+        for c in align[0][i0-cont:i0]:
+            contG += c
+        for c in align[0][i1:i1+cont]:
+            contD += c
+        display_diff = '\nS: {}\nT: {}\nC: {}  |  {}'
+        print(display_diff.format(sDiff, tDiff, contG, contD))
+        difference = [sDiff, tDiff, contG, contD]
+        l_diffs.append(difference)
+
+    return l_diffs
     
-    return l_s, l_t
+
+def process(path_rev1, path_rev2, seuil=10, cont=10):
+    '''
+    Inputs: chemins pour 2 fichiers de révisions.
+    Output: liste des différences.
+    '''
+    # Read data
+    rev1 = open(path_rev1, "r")
+    rev2 = open(path_rev2, "r")
+    r1 = rev1.read()
+    r2 = rev2.read()
+
+    # Pre-process, Levenshtein algo
+    r1, r2 = opti(r1, r2)
+    t0 = time()
+    path = levenshtein(r1, r2)
+    t1 = time()
+    print("levenhstein:", t1-t0)
+    
+    # Align, Compare, Diffs
+    align = alignment(r1, r2, path)
+    compare(r1, r2, align, n_display=130)
+    diffs = differences(r1, r2, align, seuil, cont)
+    rev1.close()
+    rev2.close()
+    
+    return diffs
         
 
 
 if __name__ == "__main__":
     
-    '''
-    s = 'BBBBBAAAAAACADAAEAAAF'
-    t = 'AAAAAAAAAAAAAAAAAAAAA'
     
+    '''
+    s = 'BBBBBAAAAAACADAAEAAAFA'
+    t = 'AAAAAAAAAAAAAAAAAAAAAA'
+    s, t = opti(s, t)
     path = levenshtein(s, t)
     align = alignment(s, t, path)
     compare(s, t, align)
-    differences(s, t, align, 1)
+    differences(s, t, align, seuil=2, cont=4)
     '''
-    
     
     
     # HERMIT EX
@@ -191,36 +257,16 @@ if __name__ == "__main__":
     path_rev2 = os.path.join(path, str(page_id), str(rev2_id))
     
     # SENTENCE EX
-    path_rev1 = "/media/louis/TOSHIBA EXT/data/sentence/1"
-    path_rev2 = "/media/louis/TOSHIBA EXT/data/sentence/2"
+    #path_rev1 = "/media/louis/TOSHIBA EXT/data/sentence/1"
+    #path_rev2 = "/media/louis/TOSHIBA EXT/data/sentence/2"
     
-    # READ DATA
-    rev1 = open(path_rev1, "r")
-    rev2 = open(path_rev2, "r")
-    r1 = rev1.read()
-    r2 = rev2.read()
+    diffs = process(path_rev1, path_rev2)
+    for diff in diffs:
+        print(diff)
+        
+        
     
-    # LEVENSHTEIN
-    t0 = time()
-    path = levenshtein(r1, r2)
-    t1 = time()
-    print("levenhstein:", t1-t0)
-    
-    # ALIGN
-    align = alignment(r1, r2, path)
-    
-    # COMPARE
-    compare(r1, r2, align)
-    
-    # DIFF
-    for seuil in [0, 2, 5, 10]:
-        print("\n SEUIL {}".format(seuil))
-        differences(r1, r2, align, seuil)
-    
-    rev1.close()
-    rev2.close()
-    
-    
+
     
     
     
