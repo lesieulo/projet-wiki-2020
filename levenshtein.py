@@ -231,6 +231,23 @@ def process(path_rev1, path_rev2, seuil=10, cont=10):
     rev2.close()
     
     return diffs
+
+
+def write_diffs(filename, diffs):
+    with open(filename, 'w', newline=None) as file:  
+        csvwriter = csv.writer(file)  
+        for d in diffs:
+            csvwriter.writerow([s.replace('\n', '\\n') for s in d])
+    return
+
+
+def read_diffs(filename):
+    diffs = []
+    with open(filename, 'r', newline=None) as file:
+        reader = csv.reader(file) 
+        for row in reader:
+            diffs.append([s.replace('\\n', '\n') for s in row])
+    return diffs
         
 
 
@@ -260,17 +277,26 @@ if __name__ == "__main__":
     #path_rev1 = "/media/louis/TOSHIBA EXT/data/sentence/1"
     #path_rev2 = "/media/louis/TOSHIBA EXT/data/sentence/2"
     
+    
+    
+    
+    
+    
     diffs = process(path_rev1, path_rev2)
-    for diff in diffs:
-        print(diff)
-        
-        
+    
+    # Ecriture et lecture
+    fname = 'revision_save.csv'
+    write_diffs(fname, diffs)
+    rdiffs = read_diffs(fname)
+    
+    # Test d'égalité avant et après écriture
+    print("\n\n Egalité", diffs == rdiffs)
     
 
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
