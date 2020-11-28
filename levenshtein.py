@@ -197,8 +197,8 @@ def differences(s, t, align, seuil, cont):
             contG += c
         for c in align[0][i1:i1+cont]:
             contD += c
-        display_diff = '\nS: {}\nT: {}\nC: {}  |  {}'
-        print(display_diff.format(sDiff, tDiff, contG, contD))
+        # display_diff = '\nS: {}\nT: {}\nC: {}  |  {}'
+        # print(display_diff.format(sDiff, tDiff, contG, contD))
         difference = [sDiff, tDiff, contG, contD]
         l_diffs.append(difference)
 
@@ -225,7 +225,7 @@ def process(path_rev1, path_rev2, seuil=10, cont=10):
     
     # Align, Compare, Diffs
     align = alignment(r1, r2, path)
-    compare(r1, r2, align, n_display=130)
+    # compare(r1, r2, align, n_display=130)
     diffs = differences(r1, r2, align, seuil, cont)
     rev1.close()
     rev2.close()
@@ -241,12 +241,16 @@ def write_diffs(filename, diffs):
     return
 
 
-def read_diffs(filename):
+def read_diffs(filename, display=False):
     diffs = []
     with open(filename, 'r', newline=None) as file:
         reader = csv.reader(file) 
         for row in reader:
             diffs.append([s.replace('\\n', '\n') for s in row])
+    if display:
+        for d in diffs:
+            display_diff = '\nS: {}\nT: {}\nC: {}  |  {}'
+            print(display_diff.format([d[0]], [d[1]], [d[2]], [d[3]]))
     return diffs
         
 

@@ -10,6 +10,7 @@ def log(logFileName, line):
     logFile.close()
     return
 
+
 def parse(path, dump):  
     """
     Parse a wikipedia xml dump file.
@@ -18,11 +19,10 @@ def parse(path, dump):
     pathDump = os.path.join(path, dump)
     pageId = 0              # current page id
     revId = 0               # current revision id
-    timestamp = ''          # current timestamp
+    parentId = ''            # current parent id
     expectPageId = False
     expectRevId = False
-    nPage = 0
-    n, nNone = 0, 0               # nbre de pbs revId=None ou ts=None
+    nPage = 0               # number of pages
     prefix = "{http://www.mediawiki.org/xml/export-0.10/}"
     logFileName = path+'dumpLog.txt'
     
@@ -39,35 +39,34 @@ def parse(path, dump):
 
             elif elemTag == 'revision':
                 expectRevId = True
-                n += 1
+                parentId = ''
 
         else:
             if elemTag == 'id':
                 if expectPageId:
                     pageId = elem.text
-                    os.mkdir(path+str(pageId))
+                    os.mkdir(path + str(pageId))
+                    os.mkdir(path + str(pageId) + '/revisions')
+                    os.mkdir(path + str(pageId) + '/differences')
                     expectPageId = False
                 elif expectRevId:
                     revId = elem.text
                     expectRevId = False
                     
-            elif elemTag == 'timestamp':
-                timestamp = elem.text
-                if timestamp == None or revId == None:
-                    nNone += 1
-                    print(pageId, str(revId), str(timestamp))
-            
+            elif elemTag =='parentid':
+                parentId = elem.text
+
             elif elemTag == 'text':
                 if type(elem.text) == str:
-                    fileName = path + str(pageId) + '/' + str(revId)
-                    file = open(fileName, 'w') 
+                    fileName = str(revId) + '-' + str(parentId)
+                    pathRev = path + str(pageId) + '/revisions/' + fileName
+                    file = open(pathRev, 'w') 
                     file.write(elem.text)
                     file.close()
                     
             elif elemTag == 'page':
-                logLine = 'Page {}. {} revisions dont {} pbs None\n'.format(pageId, n, nNone)
+                logLine = 'Page {} done\n'.format(pageId)
                 log(logFileName, logLine)
-                n, nNone = 0, 0
             elem.clear()
 
     log(logFileName, '---Done---\nTotal {} pages\n'.format(nPage))
@@ -79,9 +78,11 @@ def parse(path, dump):
     return
 
 
+
+
 if __name__ == "__main__":
     
-    case = 0
+    case = 1
     
     if case == 0:
         path = "/media/louis/TOSHIBA EXT/data/dump1/"
