@@ -3,20 +3,23 @@ import os
 from time import time
 import csv
 
+
 def opti(s, t):
     '''
-    Suppression du préfixe commun, et du suffixe commun.
-    '''
+    Séparation du préfixe commun, et du suffixe commun.
+    '''    
     a = 0
     while s[a] == t[a]:
         a += 1
+    prefixe = s[:a]
     if s[-1] != t[-1]:
-        return s[a:], t[a:]
+        return s[a:], t[a:], prefixe, ''
     else:
         z = 0
         while s[z-1] == t[z-1]:
             z -= 1
-    return s[a:z],t[a:z]
+        suffixe = s[z:]
+    return s[a:z], t[a:z], prefixe, suffixe
     
 
 def levenshtein(s, t):
@@ -55,8 +58,8 @@ def levenshtein(s, t):
             elif mini == substitution:
                 pathMatrix[i, j] = 'S'
                 
-        #print(D, '\n')
-        #print(pathMatrix)
+    #print(D, '\n')
+    #print(pathMatrix)
     return pathMatrix
 
 
@@ -64,7 +67,7 @@ def alignment(s, t, pathMatrix):
     '''
     Inputs: 2 str and the Levenshtein path matrix
     Output: matrice d'alignement avec 2 lignes, chaque ligne contient
-        les caractères de son str, avec éventuellement des ' ' pour I et D.
+        les caractères de son str, avec éventuellement des '' pour I et D.
         On remplit en partant de la fin, le début est donc souvent vide.
     '''
     m = len(s)
@@ -75,6 +78,7 @@ def alignment(s, t, pathMatrix):
     i, j = m, n
     direction = pathMatrix[i][j]
 
+    # Opérations en partant de la fin
     while direction != '':
         s_car, t_car = s[i-1], t[j-1]
         if direction == 'S':
@@ -88,11 +92,26 @@ def alignment(s, t, pathMatrix):
         elif direction == 'I':
             align[1][k] = t_car
             j -= 1
-        direction = pathMatrix[i][j]
+        direction = pathMatrix[i][j]    
         k -= 1
         
+    # Suppressions successives au début
+    while i != 0:
+        s_car = s[i-1]
+        align[0][k] = s_car
+        i -= 1
+        k -= 1
+    
+    # Insertions successives au début
+    while j != 0:
+        t_car = t[j-1]
+        align[1][k] = t_car
+        j -= 1
+        k -= 1
+        
+    # Suppression des colonnes vides du début
     a = 0
-    while align[0][a] == align[1][a]:
+    while align[0][a] == '' and align[1][a] == '':
         a += 1
     new_align = np.empty((2, m+n-a), dtype=str)
     new_align[0] = align[0][a:]
@@ -129,7 +148,7 @@ def compare(s, t, align, n_display=60):
     return s2, t2
 
 
-def differences(s, t, align, seuil, cont):
+def differences(s, t, align, prefixe, suffixe, seuil, cont):
     '''
     Inputs: 2 str, matrice d'alignement,
         seuil = nombre de caractères égaux consécutifs qu'on autorise au sein
@@ -201,6 +220,12 @@ def differences(s, t, align, seuil, cont):
         # print(display_diff.format(sDiff, tDiff, contG, contD))
         difference = [sDiff, tDiff, contG, contD]
         l_diffs.append(difference)
+        
+    # Contexte gauche de la 1ère diff
+    l_diffs[0][2] = prefixe[-cont:]
+    
+    # Contexte droit de la dernière diff
+    l_diffs[-1][3] = suffixe[:cont]
 
     return l_diffs
     
@@ -215,18 +240,40 @@ def process(path_rev1, path_rev2, seuil=10, cont=10):
     rev2 = open(path_rev2, "r")
     r1 = rev1.read()
     r2 = rev2.read()
-
-    # Pre-process, Levenshtein algo
-    r1, r2 = opti(r1, r2)
-    t0 = time()
-    path = levenshtein(r1, r2)
-    t1 = time()
-    print("levenhstein:", t1-t0)
+    n, m = len(r1), len(r2)
     
-    # Align, Compare, Diffs
-    align = alignment(r1, r2, path)
-    # compare(r1, r2, align, n_display=130)
-    diffs = differences(r1, r2, align, seuil, cont)
+    # Cas particuliers
+    if r1 == r2:
+        diffs = [['', '', '', '']]
+    elif r1 == '' or r2 == '':
+        diffs = [[r1, r2, '', '']]
+    elif n < m and r1 == r2[:n]:
+        # r1 = préfixe de r2
+        diffs = [['', r2[:-n], '', r1[:cont]]]
+    elif n < m and r1 == r2[-n:]:
+        # r1 = suffixe de r2
+        diffs = [['', r2[n:], r1[-cont:], '']]
+    elif m < n and r2 == r1[:m]:
+        # r2 = préfixe de r1
+        diffs = [[r1[m:], '', r2[-cont:], '']]
+    elif m < n and r2 == r1[-m:]:
+        # r2 = suffixe de r1
+        diffs = [[r1[:-m], '', '', r2[:cont]]]
+        
+    # Cas général
+    else:
+        # Pre-process, Levenshtein algo
+        r1, r2, prefixe, suffixe = opti(r1, r2)
+        t0 = time()
+        path = levenshtein(r1, r2)
+        t1 = time()
+        print("levenhstein:", t1-t0)
+        
+        # Align, Compare, Diffs
+        align = alignment(r1, r2, path)
+        # compare(r1, r2, align, n_display=130)
+        diffs = differences(r1, r2, align, prefixe, suffixe, seuil, cont)
+        
     rev1.close()
     rev2.close()
     
@@ -257,48 +304,21 @@ def read_diffs(filename, display=False):
 
 if __name__ == "__main__":
     
-    
-    '''
-    s = 'BBBBBAAAAAACADAAEAAAFA'
-    t = 'AAAAAAAAAAAAAAAAAAAAAA'
-    s, t = opti(s, t)
+    s = 'BBBBAAAAAACADAAEAAAFoo'
+    t = 'AAAAAAAAAAAAAAAAAAAAAAFoo'
+    print("s", len(s), s)
+    print("t", len(t), t)
+    s, t, prefixe, suffixe = opti(s, t)
+    print("s", len(s), s)
+    print("t", len(t), t)
     path = levenshtein(s, t)
     align = alignment(s, t, path)
     compare(s, t, align)
-    differences(s, t, align, seuil=2, cont=4)
-    '''
+    diffs = differences(s, t, align, prefixe, suffixe, seuil=2, cont=4)
+    print('\nDiffs:')
+    for d in diffs:
+        print(d)
     
-    
-    # HERMIT EX
-    path = "/media/louis/TOSHIBA EXT/data/hermit-dump/"
-    page_id = 1284561
-    rev1_id = 8483054
-    rev2_id = 8483079
-    path_rev1 = os.path.join(path, str(page_id), str(rev1_id))
-    path_rev2 = os.path.join(path, str(page_id), str(rev2_id))
-    
-    # SENTENCE EX
-    #path_rev1 = "/media/louis/TOSHIBA EXT/data/sentence/1"
-    #path_rev2 = "/media/louis/TOSHIBA EXT/data/sentence/2"
-    
-    
-    
-    
-    
-    
-    diffs = process(path_rev1, path_rev2)
-    
-    # Ecriture et lecture
-    fname = 'revision_save.csv'
-    write_diffs(fname, diffs)
-    rdiffs = read_diffs(fname)
-    
-    # Test d'égalité avant et après écriture
-    print("\n\n Egalité", diffs == rdiffs)
-    
-
-
-
 
 
 
