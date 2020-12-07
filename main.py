@@ -1,47 +1,60 @@
 
-from wikiparser import parse
+from wikiparser import parse, log
 from levenshtein import process, write_diffs, read_diffs
 import os
 import glob
+import time
 
 
-def find_pairs(pathDump, pageId):
+def find_pairs(pathDump, pageId, seuil, cont, filtre):
     '''
     Algo: trouve toutes les paires revId-parentId parmi toutes les révisions
         de la page wiki et fait les différences.
     '''
     pathRevisions = pathDump + pageId + '/revisions/'
-    revStar = pathRevisions + '*'
-    n = len(revStar)
+    n = len(pathRevisions)
+    list_rev = glob.glob(pathRevisions + '*')
     
-    def diff_process(r1, r2):
+    def diff_process(r1, r2, seuil, cont, filtre):
         path_rev1 = pathRevisions + r1
         path_rev2 = pathRevisions + r2
-        print(5, path_rev1)
-        print(5, path_rev2)
-        diffs = process(path_rev1, path_rev2)
-        fname = pathDump + pageId + '/differences/' + r2 + '.csv'
-        write_diffs(fname, diffs)
-        
-    r1 = glob.glob(revStar + '-')[0][n-1:]
-    r2 = glob.glob(revStar + '-' + r1[:-1])[0][n-1:]
-    diff_process(r1, r2)
-    # print("revId {} avec parentId {}".format(r2, r1))
+        diffs = process(path_rev1, path_rev2, seuil, cont, filtre)
+        if diffs:
+            fname = pathDump + pageId + '/differences/' + r2 + '.csv'
+            write_diffs(fname, diffs)
     
-    def l_children(rev, revStar):
-        # Liste des révisions qui ont rev pour parent
-        return glob.glob(revStar + '-' + rev[:rev.index('-')])
-    
-    i = 1
-    while l_children(r2, revStar) != []:
-        i += 1
-        print(i)
-        r1 = r2
-        r2 = l_children(r1, revStar)[0][n-1:]
-        #print("enfant", r2)
-        #print("père", r1)
-        diff_process(r1, r2)
+    while list_rev:
+        rev = list_rev.pop(0)[n:]
+        before_rev = glob.glob(pathRevisions + rev[rev.index('-')+1:] + '-*')
+        after_rev = glob.glob(pathRevisions + '*-' + rev[:rev.index('-')])
+        if before_rev:
+            diff_process(before_rev[0][n:], rev, seuil, cont, filtre)
+        if after_rev:
+            diff_process(rev, after_rev[0][n:], seuil, cont, filtre)
+    return
 
+
+def process_dump(path, dump, seuil=10, cont=10, filtre=1e5):
+    '''
+    Ecrit les différences de toutes les pages du dump.
+    '''
+    logFileName = path+'logDiff.txt'
+    time0 = time.time()
+    
+    log(logFileName, '---Writing differences---\n')
+    pages = [f for f in os.listdir(path) if f.isdigit()]
+    for pageId in pages:
+        if int(pageId) != 15821:
+            time1 = time.time()
+            find_pairs(path, pageId, seuil, cont, filtre)
+            time_page = int(time.time() - time1)
+            logLine = 'Page {} done in {} seconds\n'.format(pageId, time_page)
+            log(logFileName, logLine)
+        
+    log(logFileName, '---Done---')
+    seconds = time.time() - time0
+    minutes = int(seconds / 60)
+    log(logFileName, 'Total: {} minutes\n'.format(minutes))
     return
 
 
@@ -49,7 +62,7 @@ if __name__ == "__main__":
     
 
     # Choisir le dump
-    case = 1
+    case = 0
     
     if case == 0:
         path = "/media/louis/TOSHIBA EXT/data/dump1/"
@@ -60,33 +73,14 @@ if __name__ == "__main__":
     elif case == 2:
         path = "/media/louis/TOSHIBA EXT/data/john/"
         dump = "john-tenniel.xml"
-    
-    pathDump = path
-    pageId = '1284561'
-    
-    
-    
-    
-    
-    
-    
-    # parse(path, dump)
-    
-    # find_pairs(pathDump, pageId)
-    
-    
-    
-    # Choisir la page et révisions à extraire, rev1=avant, rev2=après
-    revId = '502289165-497506271'
-    pathRev = path + pageId + '/revisions/' + revId
-    
-    # Ecriture et lecture
-    fname = path + pageId + '/differences/' + revId + '.csv'
-    rdiffs = read_diffs(fname, display=True)
-    
 
 
 
+    #parse(path, dump)
 
+    #process_dump(path, dump)
+    
+    
+    
 
 

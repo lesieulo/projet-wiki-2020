@@ -24,7 +24,7 @@ def parse(path, dump):
     expectRevId = False
     nPage = 0               # number of pages
     prefix = "{http://www.mediawiki.org/xml/export-0.10/}"
-    logFileName = path+'dumpLog.txt'
+    logFileName = path+'logParse.txt'
     
     time0 = time.time()
     
