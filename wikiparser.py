@@ -2,6 +2,7 @@
 import os
 import xml.etree.ElementTree as etree
 import time
+import csv
 
 def log(logFileName, line):
     print(line)
@@ -15,6 +16,7 @@ def parse(path, dump):
     """
     Parse a wikipedia xml dump file.
     It creates a folder for each page, and a text file for each revision.
+    Metadata log file with id, oldid, timestamp
     """    
     pathDump = os.path.join(path, dump)
     pageId = 0              # current page id
@@ -24,7 +26,7 @@ def parse(path, dump):
     expectRevId = False
     nPage = 0               # number of pages
     prefix = "{http://www.mediawiki.org/xml/export-0.10/}"
-    logFileName = path+'logParse.txt'
+    logFileName = path + 'logParse.txt'
     
     time0 = time.time()
     
@@ -39,7 +41,6 @@ def parse(path, dump):
 
             elif elemTag == 'revision':
                 expectRevId = True
-                parentId = ''
 
         else:
             if elemTag == 'id':
@@ -53,9 +54,12 @@ def parse(path, dump):
                     revId = elem.text
                     expectRevId = False
                     
-            elif elemTag =='parentid':
+            elif elemTag == 'parentid':
                 parentId = elem.text
-
+                
+            elif elemTag == 'timestamp':
+                timestamp = elem.text
+                
             elif elemTag == 'text':
                 if type(elem.text) == str:
                     fileName = str(revId) + '-' + str(parentId)
@@ -63,6 +67,12 @@ def parse(path, dump):
                     file = open(pathRev, 'w') 
                     file.write(elem.text)
                     file.close()
+                    
+                metadataFile = path + str(pageId) + '/metadata.csv'
+                with open(metadataFile, 'a', newline=None) as file:  
+                    csvwriter = csv.writer(file)
+                    csvwriter.writerow([revId, parentId, timestamp])
+                revId, parentId, timestamp = '', '', ''
                     
             elif elemTag == 'page':
                 logLine = 'Page {} done\n'.format(pageId)
@@ -76,7 +86,6 @@ def parse(path, dump):
     log(logFileName, '{} minutes\n'.format(minutes))
     
     return
-
 
 
 
