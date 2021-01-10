@@ -3,6 +3,7 @@ import os
 import xml.etree.ElementTree as etree
 import time
 import csv
+import sys
 
 def log(logFileName, line):
     print(line)
@@ -91,18 +92,10 @@ def parse(path, dump):
 
 if __name__ == "__main__":
     
-    case = 1
+    pathAndDump = sys.argv[1]
+    path, dump = os.path.split(pathAndDump)
+    path += '/'
     
-    if case == 0:
-        path = "/media/louis/TOSHIBA EXT/data/dump1/"
-        dump = "enwiki-20200901-pages-meta-history1.xml-p15606p16009"
-    elif case == 1:
-        path = "/media/louis/TOSHIBA EXT/data/hermit-dump/"
-        dump = "wiki-little-hermit-history.xml"
-    elif case == 2:
-        path = "/media/louis/TOSHIBA EXT/data/john/"
-        dump = "john-tenniel.xml"
-
     parse(path, dump)
 
     

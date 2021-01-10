@@ -4,7 +4,8 @@ from levenshtein import process, write_diffs, read_diffs
 import os
 import glob
 import time
-
+import csv
+import sys
 
 def find_pairs(pathDump, pageId, seuil, cont, filtre):
     '''
@@ -58,27 +59,63 @@ def process_dump(path, dump, seuil=10, cont=10, filtre=1e5):
     return
 
 
+
+
+def process_page(pathDump, pageId, seuil, cont, filtre):
+    '''
+    Algo: trouve toutes les paires revId-parentId parmi toutes les révisions
+        de la page wiki et fait les différences.
+    '''
+    
+    metadata = []
+    with open(pathDump + pageId + '/metadata.csv', 'r', newline=None) as file:
+        reader = csv.reader(file) 
+        for row in reader:
+            metadata.append(row)
+    
+    for row in metadata:
+        print(row[2])
+    
+    '''
+    pathRevisions = pathDump + pageId + '/revisions/'
+    
+    n = len(pathRevisions)
+    list_rev = glob.glob(pathRevisions + '*')
+    
+    def diff_process(r1, r2, seuil, cont, filtre):
+        path_rev1 = pathRevisions + r1
+        path_rev2 = pathRevisions + r2
+        diffs = process(path_rev1, path_rev2, seuil, cont, filtre)
+        if diffs:
+            fname = pathDump + pageId + '/differences/' + r2 + '.csv'
+            write_diffs(fname, diffs)
+    
+    while list_rev:
+        rev = list_rev.pop(0)[n:]
+        before_rev = glob.glob(pathRevisions + rev[rev.index('-')+1:] + '-*')
+        after_rev = glob.glob(pathRevisions + '*-' + rev[:rev.index('-')])
+        if before_rev:
+            diff_process(before_rev[0][n:], rev, seuil, cont, filtre)
+        if after_rev:
+            diff_process(rev, after_rev[0][n:], seuil, cont, filtre)
+    '''
+    return
+
+
+
 if __name__ == "__main__":
     
 
-    # Choisir le dump
-    case = 0
+    pathAndDump = sys.argv[1]
+    path, dump = os.path.split(pathAndDump)
+    path += '/'
     
-    if case == 0:
-        path = "/media/louis/TOSHIBA EXT/data/dump1/"
-        dump = "enwiki-20200901-pages-meta-history1.xml-p15606p16009"
-    elif case == 1:
-        path = "/media/louis/TOSHIBA EXT/data/hermit-dump/"
-        dump = "wiki-little-hermit-history.xml"
-    elif case == 2:
-        path = "/media/louis/TOSHIBA EXT/data/john/"
-        dump = "john-tenniel.xml"
-
-
-
-    #parse(path, dump)
-
-    #process_dump(path, dump)
+    parse(path, dump)
+    
+    process_dump(path, dump)
+    
+    
+    # process_page(path, pageId, 10, 10, 1e5)
     
     
     
