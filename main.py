@@ -1,6 +1,6 @@
 
 from wikiparser import parse, log
-from levenshtein import process, write_diffs, read_diffs
+from levenshtein import process, process2, write_diffs, read_diffs
 import os
 import glob
 import time
@@ -16,13 +16,27 @@ def find_pairs(pathDump, pageId, seuil, cont, filtre):
     n = len(pathRevisions)
     list_rev = glob.glob(pathRevisions + '*')
     
-    def diff_process(r1, r2, seuil, cont, filtre):
-        path_rev1 = pathRevisions + r1
-        path_rev2 = pathRevisions + r2
+    def diff_process(fn_r1, fn_r2, seuil, cont, filtre):
+        # process
+        '''path_rev1 = pathRevisions + fn_r1
+        path_rev2 = pathRevisions + fn_r2
         diffs = process(path_rev1, path_rev2, seuil, cont, filtre)
         if diffs:
-            fname = pathDump + pageId + '/differences/' + r2 + '.csv'
+            fname = pathDump + pageId + '/differences/' + fn_r2 + '.csv'
+            write_diffs(fname, diffs)'''
+        
+        # process2
+        rev1 = open(pathRevisions + fn_r1, "r")
+        rev2 = open(pathRevisions + fn_r2, "r")
+        r1 = rev1.read()
+        r2 = rev2.read()
+        diffs = process2(r1, r2, seuil, cont, filtre)
+        if diffs:
+            fname = pathDump + pageId + '/differences/' + fn_r2 + '.csv'
             write_diffs(fname, diffs)
+        rev1.close()
+        rev2.close()
+    
     
     while list_rev:
         rev = list_rev.pop(0)[n:]
@@ -62,7 +76,7 @@ def process_dump(path, dump, seuil=10, cont=10, filtre=1e5):
 
 
 def process_page(pathDump, pageId, seuil, cont, filtre):
-    '''
+    ''' Pour une page seule, pas dans le process global
     Algo: trouve toutes les paires revId-parentId parmi toutes les révisions
         de la page wiki et fait les différences.
     '''

@@ -298,6 +298,56 @@ def process(path_rev1, path_rev2, seuil=10, cont=10, filtre=1e5):
     return diffs
 
 
+def process2(r1, r2, seuil=10, cont=10, filtre=1e5):
+    ''' SUR LES STR DIRECTEMENT
+    Inputs: chemins pour 2 fichiers de révisions.
+    Output: liste des différences.
+    '''
+    n, m = len(r1), len(r2)
+        
+    # Cas particuliers
+    if r1 == r2:
+        diffs = [] #[['', '', '', '']]
+    elif r1 == '' or r2 == '':
+        diffs = [[r1, r2, '', '']]
+    elif n < m and r1 == r2[:n]:
+        # r1 = préfixe de r2
+        diffs = [['', r2[:-n], '', r1[:cont]]]
+    elif n < m and r1 == r2[-n:]:
+        # r1 = suffixe de r2
+        diffs = [['', r2[n:], r1[-cont:], '']]
+    elif m < n and r2 == r1[:m]:
+        # r2 = préfixe de r1
+        diffs = [[r1[m:], '', r2[-cont:], '']]
+    elif m < n and r2 == r1[-m:]:
+        # r2 = suffixe de r1
+        diffs = [[r1[:-m], '', '', r2[:cont]]]
+        
+    # Cas général
+    else:
+        # Pre-process, Levenshtein algo
+        r1, r2, prefixe, suffixe = opti(r1, r2)
+        
+        # Filtre sur la taille
+        if len(r1) * len(r2) > filtre:
+            # print("Lev shape > 100.000")
+            return []
+        
+        t0 = time()
+        path = levenshtein(r1, r2)
+        t1 = time()
+        levTime = int(t1 - t0)
+        shape = len(r1) * len(r2)
+        # print("levenhstein: taille {}, temps de calcul {} s".format(shape, levTime))
+            
+        # Align, Compare, Diffs
+        align = alignment(r1, r2, path)
+        # compare(r1, r2, align, n_display=130) 
+        diffs = differences(r1, r2, align, prefixe, suffixe, seuil, cont)
+    
+    return diffs
+
+
 def write_diffs(filename, diffs):
     with open(filename, 'w', newline=None) as file:  
         csvwriter = csv.writer(file)  
@@ -319,47 +369,29 @@ def read_diffs(filename, display=False):
     return diffs
         
 
-
 if __name__ == "__main__":
     
     
     s = 'AAAAbbbAAA'
     t = 'AAAAbbAAA'
-    print("s", len(s), s)
-    print("t", len(t), t)
-    s, t, prefixe, suffixe = opti(s, t)
-    print("ici", s, t, prefixe, suffixe)
-    print("s", len(s), s)
-    print("t", len(t), t)
-    path = levenshtein(s, t)
-    align = alignment(s, t, path)
-    compare(s, t, align)
-    diffs = differences(s, t, align, prefixe, suffixe, seuil=2, cont=4)
+    diffs = process2(s, t, seuil=2, cont=4, filtre=1e5)
     print('\nDiffs:')
     for d in diffs:
         print(d)
     
 
-    '''
-    
-    rev2 = open('/media/louis/TOSHIBA EXT/data/john/15612/revisions/1323600-713070', "r")
+
+    '''rev2 = open('/media/louis/TOSHIBA EXT/data/john/15612/revisions/1323600-713070', "r")
     rev1 = open('/media/louis/TOSHIBA EXT/data/john/15612/revisions/1845702-1323600', "r")
     s = rev1.read()
     t = rev2.read()
     print("s", len(s))
     print("t", len(t))
-
-    s, t, prefixe, suffixe = opti(s, t)
-    print("s", len(s), s)
-    print("t", len(t), t)
-    path = levenshtein(s, t)
-    align = alignment(s, t, path)
-    compare(s, t, align)
-    diffs = differences(s, t, align, prefixe, suffixe, seuil=2, cont=4)
+    diffs = process2(s, t, seuil=2, cont=4, filtre=1e5)
     print('\nDiffs:')
     for d in diffs:
-        print(d)
-    '''
+        print(d)'''
+    
     
 
 
