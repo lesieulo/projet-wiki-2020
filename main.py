@@ -12,6 +12,7 @@ def find_pairs(pathDump, pageId, seuil, cont, filtre):
     Algo: trouve toutes les paires revId-parentId parmi toutes les révisions
         de la page wiki et fait les différences.
     '''
+    logFileName = path+'logDiff.txt'
     pathRevisions = pathDump + pageId + '/revisions/'
     n = len(pathRevisions)
     list_rev = glob.glob(pathRevisions + '*')
@@ -26,6 +27,19 @@ def find_pairs(pathDump, pageId, seuil, cont, filtre):
         if diffs:
             fname = pathDump + pageId + '/differences/' + fn_r2 + '.csv'
             write_diffs(fname, diffs)
+            
+        # Debug
+        if diffs == []:
+            logLine = "Issue 'diffs = []' in {}".format(fname)
+            log(logFileName, logLine)
+        for d in diffs:
+            if "gory:June]]" in d[1] and "ory:June]]" in d[2]:
+                logLine = "Issue 'gory:June]]' in {}".format(fname)
+                log(logFileName, logLine)
+            if "{{pp-pc1}}\n" in d[0] and "{{pp-pc1}}" in d[3]:
+                logLine = "Issue '{{pp-pc1}}' in {}".format(fname)
+                log(logFileName, logLine)
+                
         rev1.close()
         rev2.close()
 
@@ -119,7 +133,6 @@ if __name__ == "__main__":
     parse(path, dump)
     
     process_dump(path, dump)
-    
     
     # process_page(path, pageId, 10, 10, 1e5)
     
