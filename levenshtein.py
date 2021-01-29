@@ -238,67 +238,9 @@ def differences(s, t, align, prefixe, suffixe, seuil, cont):
     l_diffs[-1][3] = suffixe[:cont]
 
     return l_diffs
-    
-
-def process(path_rev1, path_rev2, seuil=10, cont=10, filtre=1e5):
-    '''
-    Inputs: chemins pour 2 fichiers de révisions.
-    Output: liste des différences.
-    '''
-    # Read data
-    rev1 = open(path_rev1, "r")
-    rev2 = open(path_rev2, "r")
-    r1 = rev1.read()
-    r2 = rev2.read()
-    n, m = len(r1), len(r2)
-    
-    # Cas particuliers
-    if r1 == r2:
-        diffs = [['', '', '', '']]
-    elif r1 == '' or r2 == '':
-        diffs = [[r1, r2, '', '']]
-    elif n < m and r1 == r2[:n]:
-        # r1 = préfixe de r2
-        diffs = [['', r2[:-n], '', r1[:cont]]]
-    elif n < m and r1 == r2[-n:]:
-        # r1 = suffixe de r2
-        diffs = [['', r2[n:], r1[-cont:], '']]
-    elif m < n and r2 == r1[:m]:
-        # r2 = préfixe de r1
-        diffs = [[r1[m:], '', r2[-cont:], '']]
-    elif m < n and r2 == r1[-m:]:
-        # r2 = suffixe de r1
-        diffs = [[r1[:-m], '', '', r2[:cont]]]
-        
-    # Cas général
-    else:
-        # Pre-process, Levenshtein algo
-        r1, r2, prefixe, suffixe = opti(r1, r2)
-        
-        # Filtre sur la taille
-        if len(r1) * len(r2) > filtre:
-            # print("Lev shape > 100.000")
-            return []
-        
-        t0 = time()
-        path = levenshtein(r1, r2)
-        t1 = time()
-        levTime = int(t1 - t0)
-        shape = len(r1) * len(r2)
-        # print("levenhstein: taille {}, temps de calcul {} s".format(shape, levTime))
-            
-        # Align, Compare, Diffs
-        align = alignment(r1, r2, path)
-        # compare(r1, r2, align, n_display=130) 
-        diffs = differences(r1, r2, align, prefixe, suffixe, seuil, cont)
-        
-    rev1.close()
-    rev2.close()
-    
-    return diffs
 
 
-def process2(r1, r2, seuil=10, cont=10, filtre=1e5):
+def process(r1, r2, seuil=10, cont=10, filtre=1e5):
     ''' SUR LES STR DIRECTEMENT
     Inputs: chemins pour 2 fichiers de révisions.
     Output: liste des différences.
@@ -374,7 +316,7 @@ if __name__ == "__main__":
     
     s = 'AAAAbbbAAA'
     t = 'AAAAbbAAA'
-    diffs = process2(s, t, seuil=2, cont=4, filtre=1e5)
+    diffs = process(s, t, seuil=2, cont=4, filtre=1e5)
     print('\nDiffs:')
     for d in diffs:
         print(d)
@@ -387,7 +329,7 @@ if __name__ == "__main__":
     t = rev2.read()
     print("s", len(s))
     print("t", len(t))
-    diffs = process2(s, t, seuil=2, cont=4, filtre=1e5)
+    diffs = process(s, t, seuil=2, cont=4, filtre=1e5)
     print('\nDiffs:')
     for d in diffs:
         print(d)'''
