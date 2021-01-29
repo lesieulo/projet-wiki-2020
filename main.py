@@ -28,17 +28,17 @@ def find_pairs(pathDump, pageId, seuil, cont, filtre):
             fname = pathDump + pageId + '/differences/' + fn_r2 + '.csv'
             write_diffs(fname, diffs)
             
-        # Debug
-        if diffs == []:
-            logLine = "Issue 'diffs = []' in {}".format(fname)
-            log(logFileName, logLine)
-        for d in diffs:
-            if "gory:June]]" in d[1] and "ory:June]]" in d[2]:
-                logLine = "Issue 'gory:June]]' in {}".format(fname)
+            # Debug
+            if diffs == []:
+                logLine = "Issue 'diffs = []' in {}".format(fname)
                 log(logFileName, logLine)
-            if "{{pp-pc1}}\n" in d[0] and "{{pp-pc1}}" in d[3]:
-                logLine = "Issue '{{pp-pc1}}' in {}".format(fname)
-                log(logFileName, logLine)
+            for d in diffs:
+                if "gory:June]]" in d[1] and "ory:June]]" in d[2]:
+                    logLine = "Issue 'gory:June]]' in {}".format(fname)
+                    log(logFileName, logLine)
+                if "{{pp-pc1}}\n" in d[0] and "{{pp-pc1}}" in d[3]:
+                    logLine = "Issue '{{pp-pc1}}' in {}".format(fname)
+                    log(logFileName, logLine)
                 
         rev1.close()
         rev2.close()
