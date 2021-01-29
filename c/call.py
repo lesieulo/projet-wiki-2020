@@ -1,5 +1,7 @@
 from ctypes import *
 
+# gcc -shared -o liblev.so -fPIC lev.c
+
 libLev = CDLL("./liblev.so")
 
 libLev.connect() 
@@ -7,9 +9,8 @@ libLev.connect()
 n = libLev.addNum(20,33)
 print("add", n)
 
-d = libLev.distance("niche", "chiens")
+d = libLev.distance(b"niche", b"chiens")
 print("lev", d)
 
-# libLev.lenchar.argtypes = [c_char_p] 
-l = libLev.lenchar("coucou")
+l = libLev.lenchar(b"coucou")
 print("len", l)
