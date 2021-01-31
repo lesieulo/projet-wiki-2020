@@ -254,10 +254,10 @@ def process(r1, r2, seuil=10, cont=10, filtre=1e5):
         diffs = [[r1, r2, '', '']]
     elif n < m and r1 == r2[:n]:
         # r1 = préfixe de r2
-        diffs = [['', r2[:-n], '', r1[:cont]]]
+        diffs = [['', r2[n:], r1[-cont:], '']]
     elif n < m and r1 == r2[-n:]:
         # r1 = suffixe de r2
-        diffs = [['', r2[n:], r1[-cont:], '']]
+        diffs = [['', r2[:m-n], '', r1[:cont]]]
     elif m < n and r2 == r1[:m]:
         # r2 = préfixe de r1
         diffs = [[r1[m:], '', r2[-cont:], '']]
@@ -269,6 +269,8 @@ def process(r1, r2, seuil=10, cont=10, filtre=1e5):
     else:
         # Pre-process, Levenshtein algo
         r1, r2, prefixe, suffixe = opti(r1, r2)
+        print("\n\n\n\n\nR1:\n", r1)
+        print("\n\n\n\n\nR2:\n", r2)
         
         # Filtre sur la taille
         if len(r1) * len(r2) > filtre:
@@ -315,24 +317,25 @@ if __name__ == "__main__":
     
     
     s = 'AAAAbbbAAA'
-    t = 'AAAAbbAAA'
-    diffs = process(s, t, seuil=2, cont=4, filtre=1e5)
+    t = 'rrrAAAAbbbAAA'
+    diffs = process(s, t, seuil=2, cont=2, filtre=1e5)
     print('\nDiffs:')
     for d in diffs:
         print(d)
     
-
-
-    '''rev2 = open('/media/louis/TOSHIBA EXT/data/john/15612/revisions/1323600-713070', "r")
-    rev1 = open('/media/louis/TOSHIBA EXT/data/john/15612/revisions/1845702-1323600', "r")
+    '''
+    rev2 = open('589219272-589219260', "r")
+    rev1 = open('589219260-587814070', "r")
     s = rev1.read()
     t = rev2.read()
-    print("s", len(s))
-    print("t", len(t))
-    diffs = process(s, t, seuil=2, cont=4, filtre=1e5)
+    print(len(s))
+    print(len(t))
+    diffs = process(s, t, filtre=1e5)
     print('\nDiffs:')
     for d in diffs:
-        print(d)'''
+        print(d)
+    '''
+    
     
     
 
