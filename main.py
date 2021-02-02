@@ -30,15 +30,8 @@ def find_pairs(pathDump, pageId, seuil, cont, filtre):
             
             # Debug
             if diffs == []:
-                logLine = "Issue 'diffs = []' in {}".format(fname)
+                logLine = "Issue 'diffs = []' in {}\n".format(fname)
                 log(logFileName, logLine)
-            for d in diffs:
-                if "gory:June]]" in d[1] and "ory:June]]" in d[2]:
-                    logLine = "Issue 'gory:June]]' in {}".format(fname)
-                    log(logFileName, logLine)
-                if "{{pp-pc1}}\n" in d[0] and "{{pp-pc1}}" in d[3]:
-                    logLine = "Issue '{{pp-pc1}}' in {}".format(fname)
-                    log(logFileName, logLine)
                 
         rev1.close()
         rev2.close()
@@ -130,11 +123,9 @@ if __name__ == "__main__":
     path, dump = os.path.split(pathAndDump)
     path += '/'
     
-    parse(path, dump)
+    # parse(path, dump)
     
     process_dump(path, dump)
-    
-    # process_page(path, pageId, 10, 10, 1e5)
     
     
     
