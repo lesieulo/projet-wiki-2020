@@ -66,6 +66,17 @@ int lenchar (const char * word)
     return len1;
 }
 
+int *creer_tableau(void)
+{
+    static int tableau[5];
+    int i;
+    
+    for (i=0; i<5; i++)
+        tableau[i] = i * 3;
+        
+    return tableau;
+}
+
 int main ()
 {
     const char * word1;
@@ -82,3 +93,10 @@ int main ()
     
     return 0;
 }
+
+
+
+
+
+
+
