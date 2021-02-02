@@ -4,7 +4,6 @@ from time import time
 import csv
 
 
-
 def opti(s, t):
     '''
     Séparation du préfixe commun, et du suffixe commun.
@@ -269,8 +268,6 @@ def process(r1, r2, seuil=10, cont=10, filtre=1e5):
     else:
         # Pre-process, Levenshtein algo
         r1, r2, prefixe, suffixe = opti(r1, r2)
-        print("\n\n\n\n\nR1:\n", r1)
-        print("\n\n\n\n\nR2:\n", r2)
         
         # Filtre sur la taille
         if len(r1) * len(r2) > filtre:
@@ -294,16 +291,19 @@ def process(r1, r2, seuil=10, cont=10, filtre=1e5):
 
 def write_diffs(filename, diffs):
     with open(filename, 'w', newline=None) as file:  
-        csvwriter = csv.writer(file)  
+        csvwriter = csv.writer(file, delimiter='\t')  
         for d in diffs:
-            csvwriter.writerow([s.replace('\n', '\\n') for s in d])
+            csvwriter.writerow(["%r"%s for s in d])
     return
 
 
 def read_diffs(filename, display=False):
+    '''
+    Not operational yet
+    '''
     diffs = []
     with open(filename, 'r', newline=None) as file:
-        reader = csv.reader(file) 
+        reader = csv.reader(file, delimiter='\t') 
         for row in reader:
             diffs.append([s.replace('\\n', '\n') for s in row])
     if display:
@@ -311,11 +311,14 @@ def read_diffs(filename, display=False):
             display_diff = '\nS: {}\nT: {}\nC: {}  |  {}'
             print(display_diff.format([d[0]], [d[1]], [d[2]], [d[3]]))
     return diffs
+
+
         
 
 if __name__ == "__main__":
     
     
+    '''
     s = 'AAAAbbbAAA'
     t = 'rrrAAAAbbbAAA'
     diffs = process(s, t, seuil=2, cont=2, filtre=1e5)
@@ -323,7 +326,8 @@ if __name__ == "__main__":
     for d in diffs:
         print(d)
     
-    '''
+    
+    
     rev2 = open('589219272-589219260', "r")
     rev1 = open('589219260-587814070', "r")
     s = rev1.read()
@@ -334,8 +338,45 @@ if __name__ == "__main__":
     print('\nDiffs:')
     for d in diffs:
         print(d)
-    '''
     
+    
+
+    o = 'Something \n möre cömplex \t like ᚬ'
+    print('\no', type(o))
+    print(o)
+    print([o])
+    
+    e = o.encode()
+    print("\ne", type(e))
+    print(e)
+    print([e])
+    
+    s = str(e) # s = "%s" % s
+    print("\ns", type(s))
+    print(s)
+    print([s])
+    
+    ed = "%s" % e.decode() # r = raw string, équivalent à r'mytext'
+    print("\ned", type(ed))
+    print(ed)
+    print([ed])
+
+    
+    import ast
+    a = "'I like to \\n ride my red \\t bike'"
+    print([a])
+    b = ast.literal_eval(a)
+    print([b])
+    
+    '''
+
+
+    diffs = []
+    diffs.append(['I like to \n ride my red \t bike', '34', '56', 'ᚬ'])
+    diffs.append(['', "ligne1\nligne2", "bl\abl\\aG", 'blab\tlaD\n'])
+    diffs.append(['möre cömplex', '76', '54', '3\\n2'])
+    write_diffs('mycsv.csv', diffs)
+    # read_diffs('mycsv.csv', display=True)
     
     
 
