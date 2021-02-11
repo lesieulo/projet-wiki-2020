@@ -313,14 +313,73 @@ def read_diffs(filename, display=False):
     return diffs
 
 
+def write(filename, diffs):
+    with open(filename, 'w') as f:
+        for r in diffs:
+            first = True
+            for c in r:
+                if not first:
+                    f.write('\t')
+                first = False
+                for x in c:
+                    if x == '\t':
+                        f.write("\\t")
+                    elif x == '\n':
+                        f.write("\\n")
+                    elif x == '\\':
+                        f.write("\\\\")
+                    elif x == '\a':
+                        f.write('\\a')
+                    else:
+                        f.write(x)
+            f.write('\n')
+
+
+def read(filename, display=False):
+    diffs = []
+    with open (filename, 'r') as f:
+        for ll in f.readlines():
+            # remove terminating '\n'
+            s = ll[:-1].split('\t')
+            r = []
+            for c in s:
+                v = ""
+                seen = False
+                for x in c:
+                    if not seen:
+                        if x == '\\':
+                            seen = True
+                        else:
+                            v += x
+                    else:
+                        if x == 'n':
+                            v += '\n'
+                        elif x == 't':
+                            v += '\t'
+                        elif x == '\\':
+                            v += '\\'
+                        elif x == 'a':
+                            v += '\a'
+                        else:
+                            print(x)
+                            assert(False)
+                        seen = False
+                r.append(v)
+            diffs.append(r)
+    if display:
+        for d in diffs:
+            display_diff = '\nS: {}\nT: {}\nC: {}  |  {}'
+            print(display_diff.format([d[0]], [d[1]], [d[2]], [d[3]]))
+    return diffs
+
         
 
 if __name__ == "__main__":
     
     
     '''
-    s = 'AAAAbbbAAA'
-    t = 'rrrAAAAbbbAAA'
+    s = 'niche'
+    t = 'chien'
     diffs = process(s, t, seuil=2, cont=2, filtre=1e5)
     print('\nDiffs:')
     for d in diffs:
@@ -338,36 +397,7 @@ if __name__ == "__main__":
     print('\nDiffs:')
     for d in diffs:
         print(d)
-    
-    
-
-    o = 'Something \n möre cömplex \t like ᚬ'
-    print('\no', type(o))
-    print(o)
-    print([o])
-    
-    e = o.encode()
-    print("\ne", type(e))
-    print(e)
-    print([e])
-    
-    s = str(e) # s = "%s" % s
-    print("\ns", type(s))
-    print(s)
-    print([s])
-    
-    ed = "%s" % e.decode() # r = raw string, équivalent à r'mytext'
-    print("\ned", type(ed))
-    print(ed)
-    print([ed])
-
-    
-    import ast
-    a = "'I like to \\n ride my red \\t bike'"
-    print([a])
-    b = ast.literal_eval(a)
-    print([b])
-    
+        
     '''
 
 
@@ -375,9 +405,27 @@ if __name__ == "__main__":
     diffs.append(['I like to \n ride my red \t bike', '34', '56', 'ᚬ'])
     diffs.append(['', "ligne1\nligne2", "bl\abl\\aG", 'blab\tlaD\n'])
     diffs.append(['möre cömplex', '76', '54', '3\\n2'])
-    write_diffs('mycsv.csv', diffs)
-    # read_diffs('mycsv.csv', display=True)
+    diffs.append(["''", ""''"", """'""", """''"""])
+    write('mycsv.csv', diffs)
+    read('mycsv.csv', display=True)
     
+
+    s = 'le petit chat est là'
+    t = 'le petut chat esfeft à'
+    m, n = len(s), len(t)
+    print(m, n)
     
+    lev = levenshtein(s, t)
+    
+    f_out = "c/new/path.txt"
+    A = np.empty((m+1, n+1), dtype=str)
+    with open(f_out, 'r') as f:
+        for i, line in enumerate(f.readlines(), start=1):
+            for j, c in enumerate(line[:-1], start=1):
+                A[i][j] = c
+    
+    a1 = compare(s, t, alignment(s, t, lev))
+    a2 = compare(s, t, alignment(s, t, A))
+
 
 
