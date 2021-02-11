@@ -1,0 +1,4 @@
+voici mon texte; avec des caractères bizarres,
+avec \t \r \\\ et *%$
+voici un tab	
+c'est la fin.
