@@ -67,8 +67,8 @@ def levenshtein(s, t):
             elif mini == substitution:
                 pathMatrix[i, j] = 'S'
                 
-    #print(D, '\n')
-    #print(pathMatrix)
+    print(D, '\n')
+    print(pathMatrix)
     return pathMatrix
 
 
@@ -328,8 +328,8 @@ def write(filename, diffs):
                         f.write("\\n")
                     elif x == '\\':
                         f.write("\\\\")
-                    elif x == '\a':
-                        f.write('\\a')
+                    #elif x == '\a':
+                    #    f.write('\\a')
                     else:
                         f.write(x)
             f.write('\n')
@@ -358,8 +358,8 @@ def read(filename, display=False):
                             v += '\t'
                         elif x == '\\':
                             v += '\\'
-                        elif x == 'a':
-                            v += '\a'
+                        #elif x == 'a':
+                        #    v += '\a'
                         else:
                             print(x)
                             assert(False)
@@ -372,6 +372,15 @@ def read(filename, display=False):
             print(display_diff.format([d[0]], [d[1]], [d[2]], [d[3]]))
     return diffs
 
+
+
+def write_unicode(s, t):    
+    filenames = ['c/s.unicode', 'c/t.unicode']    
+    for i, text in enumerate([s, t]):
+        unicode_str = ' '.join([str(ord(c)) for c in text])
+        filename = filenames[i]
+        with open(filename, 'w') as f:
+            f.write(unicode_str)
         
 
 if __name__ == "__main__":
@@ -397,15 +406,14 @@ if __name__ == "__main__":
     print('\nDiffs:')
     for d in diffs:
         print(d)
-        
-    '''
+    
 
 
     diffs = []
     diffs.append(['I like to \n ride my red \t bike', '34', '56', 'ᚬ'])
     diffs.append(['', "ligne1\nligne2", "bl\abl\\aG", 'blab\tlaD\n'])
     diffs.append(['möre cömplex', '76', '54', '3\\n2'])
-    diffs.append(["''", ""''"", """'""", """''"""])
+    diffs.append(['\a', ""''"", """'""", """''"""])
     write('mycsv.csv', diffs)
     read('mycsv.csv', display=True)
     
@@ -414,18 +422,32 @@ if __name__ == "__main__":
     t = 'le petut chat esfeft à'
     m, n = len(s), len(t)
     print(m, n)
-    
     lev = levenshtein(s, t)
-    
     f_out = "c/new/path.txt"
     A = np.empty((m+1, n+1), dtype=str)
     with open(f_out, 'r') as f:
         for i, line in enumerate(f.readlines(), start=1):
             for j, c in enumerate(line[:-1], start=1):
                 A[i][j] = c
-    
     a1 = compare(s, t, alignment(s, t, lev))
     a2 = compare(s, t, alignment(s, t, A))
+    '''
+
+
+    s = 'niche'
+    t = 'chien'
+
+    write_unicode(s, t)
+    
+    levenshtein(s, t)
+
+    
+    
+
+
+
+
+
 
 
 
