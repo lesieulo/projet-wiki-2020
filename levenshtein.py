@@ -1,7 +1,7 @@
 import numpy as np
 import os
-from time import time
 import csv
+import subprocess
 
 
 def opti(s, t):
@@ -67,8 +67,8 @@ def levenshtein(s, t):
             elif mini == substitution:
                 pathMatrix[i, j] = 'S'
                 
-    print(D, '\n')
-    print(pathMatrix)
+    #print(D, '\n')
+    #print(pathMatrix)
     return pathMatrix
 
 
@@ -239,7 +239,7 @@ def differences(s, t, align, prefixe, suffixe, seuil, cont):
     return l_diffs
 
 
-def process(r1, r2, seuil=10, cont=10, filtre=1e5):
+def process(r1, r2, seuil=10, cont=10, filtre=1e5, C=False):
     ''' SUR LES STR DIRECTEMENT
     Inputs: chemins pour 2 fichiers de révisions.
     Output: liste des différences.
@@ -273,16 +273,17 @@ def process(r1, r2, seuil=10, cont=10, filtre=1e5):
         if len(r1) * len(r2) > filtre:
             # print("Lev shape > 100.000")
             return []
-        
-        t0 = time()
-        path = levenshtein(r1, r2)
-        t1 = time()
-        levTime = int(t1 - t0)
-        shape = len(r1) * len(r2)
-        # print("levenhstein: taille {}, temps de calcul {} s".format(shape, levTime))
-            
-        # Align, Compare, Diffs
-        align = alignment(r1, r2, path)
+
+        if C:
+            write_unicode(r1, r2)
+            subprocess.run(["./lev-alignment.out"])
+            print("\nLEV EN C")
+            align = levenshtein_alignment_C(r1, r2)
+        else:
+            path = levenshtein(r1, r2)
+            print("\nLEV EN PYTHON")
+            align = alignment(r1, r2, path)
+
         # compare(r1, r2, align, n_display=130) 
         diffs = differences(r1, r2, align, prefixe, suffixe, seuil, cont)
     
@@ -328,8 +329,6 @@ def write(filename, diffs):
                         f.write("\\n")
                     elif x == '\\':
                         f.write("\\\\")
-                    #elif x == '\a':
-                    #    f.write('\\a')
                     else:
                         f.write(x)
             f.write('\n')
@@ -358,8 +357,6 @@ def read(filename, display=False):
                             v += '\t'
                         elif x == '\\':
                             v += '\\'
-                        #elif x == 'a':
-                        #    v += '\a'
                         else:
                             print(x)
                             assert(False)
@@ -374,17 +371,50 @@ def read(filename, display=False):
 
 
 
-def write_unicode(s, t):    
-    filenames = ['c/s.unicode', 'c/t.unicode']    
+##########################################################
+# Useful for levenshtein-alignment in C
+##########################################################
+
+
+def write_unicode(s, t):
+    '''
+    Ecrit la chaîne s dans un fichier, les caractères sont des entiers unicode séparés par des espaces.
+    Pareil pour t.
+    '''    
+    filenames = ['s1.uni', 't1.uni']    
     for i, text in enumerate([s, t]):
         unicode_str = ' '.join([str(ord(c)) for c in text])
         filename = filenames[i]
         with open(filename, 'w') as f:
             f.write(unicode_str)
+
+def get_align_l(filename):
+    '''
+    Lit la chaîne "alignée" par l'exécutable de lev-alignment.c, et renvoie la liste des caractères dans l'ordre.
+    '''
+    with open(filename, 'r') as f:
+        chaine = f.readlines()[0][:-1]
+        decode_u = lambda u: '' if (u == -1) else chr(u)
+        l = [decode_u(int(k)) for k in reversed(chaine.split(' '))]
+    return l
+
+def levenshtein_alignment_C(s, t):
+    '''
+    Récupère l'alignement de s et t.
+    Output: numpy array, ligne0=s, ligne1=t. Cette sortie est utilisable par la fonction differences.
+    '''
+    s_l = get_align_l('s2.uni')
+    t_l = get_align_l('t2.uni')
+    align_len = len(s_l)
+    assert (align_len == len(t_l))
+    align_C = np.empty((2, align_len), dtype=str)
+    for k in range(align_len):
+        align_C[0][k] = s_l[k]
+        align_C[1][k] = t_l[k]
+    return align_C
         
 
 if __name__ == "__main__":
-    
     
     '''
     s = 'niche'
@@ -416,30 +446,14 @@ if __name__ == "__main__":
     diffs.append(['\a', ""''"", """'""", """''"""])
     write('mycsv.csv', diffs)
     read('mycsv.csv', display=True)
-    
-
-    s = 'le petit chat est là'
-    t = 'le petut chat esfeft à'
-    m, n = len(s), len(t)
-    print(m, n)
-    lev = levenshtein(s, t)
-    f_out = "c/new/path.txt"
-    A = np.empty((m+1, n+1), dtype=str)
-    with open(f_out, 'r') as f:
-        for i, line in enumerate(f.readlines(), start=1):
-            for j, c in enumerate(line[:-1], start=1):
-                A[i][j] = c
-    a1 = compare(s, t, alignment(s, t, lev))
-    a2 = compare(s, t, alignment(s, t, A))
     '''
 
 
-    s = 'niche'
-    t = 'chien'
+    s = '2le etit ch\nat est lö'
+    t = 'le petit chAt est là>'
 
-    write_unicode(s, t)
-    
-    levenshtein(s, t)
+
+    process(s, t, C=True)
 
     
     
