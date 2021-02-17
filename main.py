@@ -27,11 +27,6 @@ def find_pairs(pathDump, pageId, seuil, cont, filtre, C):
         if diffs:
             fname = pathDump + pageId + '/differences/' + fn_r2 + '.csv'
             write_diffs(fname, diffs)
-            
-            # Debug
-            if diffs == []:
-                logLine = "Issue 'diffs = []' in {}\n".format(fname)
-                log(logFileName, logLine)
                 
         rev1.close()
         rev2.close()
@@ -55,7 +50,10 @@ def process_dump(path, dump, seuil=10, cont=10, filtre=1e5, C=False):
     logFileName = path+'logDiff.txt'
     time0 = time.time()
     
-    log(logFileName, '---Writing differences---\n')
+    langage = 'python'
+    if C:
+        langage = 'C'
+    log(logFileName, '---Writing differences--- ({})\n'.format(langage))
     pages = [f for f in os.listdir(path) if f.isdigit()]
     for pageId in pages:
         if int(pageId) != 15821:
@@ -65,7 +63,7 @@ def process_dump(path, dump, seuil=10, cont=10, filtre=1e5, C=False):
             logLine = 'Page {} done in {} seconds\n'.format(pageId, time_page)
             log(logFileName, logLine)
         
-    log(logFileName, '---Done---')
+    log(logFileName, '---Done---\n')
     seconds = time.time() - time0
     minutes = int(seconds / 60)
     log(logFileName, 'Total: {} minutes\n'.format(minutes))
@@ -126,7 +124,6 @@ if __name__ == "__main__":
     parse(path, dump)
     
     process_dump(path, dump, C=True)
-    
     
     
 

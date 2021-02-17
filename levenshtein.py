@@ -4,6 +4,10 @@ import csv
 import subprocess
 
 
+##########################################################
+# Main functions
+##########################################################
+
 def opti(s, t):
     '''
     Séparation du préfixe commun, et du suffixe commun.
@@ -240,8 +244,8 @@ def differences(s, t, align, prefixe, suffixe, seuil, cont):
 
 
 def process(r1, r2, seuil=10, cont=10, filtre=1e5, C=False):
-    ''' SUR LES STR DIRECTEMENT
-    Inputs: chemins pour 2 fichiers de révisions.
+    '''
+    Inputs: 2 chaînes de caractères
     Output: liste des différences.
     '''
     n, m = len(r1), len(r2)
@@ -268,53 +272,37 @@ def process(r1, r2, seuil=10, cont=10, filtre=1e5, C=False):
     else:
         # Pre-process, Levenshtein algo
         r1, r2, prefixe, suffixe = opti(r1, r2)
+
+        # Cas insertion/suppression unique
+        if r1 == '' or r2 == '':
+            diffs = [[r1, r2, prefixe[-cont:], suffixe[:cont]]]
         
-        # Filtre sur la taille
-        if len(r1) * len(r2) > filtre:
-            # print("Lev shape > 100.000")
-            return []
-
-        if C:
-            write_unicode(r1, r2)
-            subprocess.run(["./lev-alignment.out"])
-            print("\nLEV EN C")
-            align = levenshtein_alignment_C(r1, r2)
         else:
-            path = levenshtein(r1, r2)
-            print("\nLEV EN PYTHON")
-            align = alignment(r1, r2, path)
 
-        # compare(r1, r2, align, n_display=130) 
-        diffs = differences(r1, r2, align, prefixe, suffixe, seuil, cont)
+            # Filtre sur la taille
+            if len(r1) * len(r2) > filtre:
+                # print("Lev shape > 100.000")
+                return []
+
+            if C:
+                write_unicode(r1, r2)
+                subprocess.run(["./lev-alignment.out"])
+                align = levenshtein_alignment_C(r1, r2)
+            else:
+                path = levenshtein(r1, r2)
+                align = alignment(r1, r2, path)
+
+            # compare(r1, r2, align, n_display=130) 
+            diffs = differences(r1, r2, align, prefixe, suffixe, seuil, cont)
     
     return diffs
 
 
+##########################################################
+# Csv writer/reader called in main.py
+##########################################################
+
 def write_diffs(filename, diffs):
-    with open(filename, 'w', newline=None) as file:  
-        csvwriter = csv.writer(file, delimiter='\t')  
-        for d in diffs:
-            csvwriter.writerow(["%r"%s for s in d])
-    return
-
-
-def read_diffs(filename, display=False):
-    '''
-    Not operational yet
-    '''
-    diffs = []
-    with open(filename, 'r', newline=None) as file:
-        reader = csv.reader(file, delimiter='\t') 
-        for row in reader:
-            diffs.append([s.replace('\\n', '\n') for s in row])
-    if display:
-        for d in diffs:
-            display_diff = '\nS: {}\nT: {}\nC: {}  |  {}'
-            print(display_diff.format([d[0]], [d[1]], [d[2]], [d[3]]))
-    return diffs
-
-
-def write(filename, diffs):
     with open(filename, 'w') as f:
         for r in diffs:
             first = True
@@ -334,7 +322,7 @@ def write(filename, diffs):
             f.write('\n')
 
 
-def read(filename, display=False):
+def read_diffs(filename, display=False):
     diffs = []
     with open (filename, 'r') as f:
         for ll in f.readlines():
@@ -372,9 +360,8 @@ def read(filename, display=False):
 
 
 ##########################################################
-# Useful for levenshtein-alignment in C
+# Useful for the C levenshtein-alignment in process function
 ##########################################################
-
 
 def write_unicode(s, t):
     '''
@@ -423,39 +410,16 @@ if __name__ == "__main__":
     print('\nDiffs:')
     for d in diffs:
         print(d)
+    '''
     
-    
-    
-    rev2 = open('589219272-589219260', "r")
-    rev1 = open('589219260-587814070', "r")
-    s = rev1.read()
-    t = rev2.read()
-    print(len(s))
-    print(len(t))
-    diffs = process(s, t, filtre=1e5)
-    print('\nDiffs:')
-    for d in diffs:
-        print(d)
-    
-
 
     diffs = []
     diffs.append(['I like to \n ride my red \t bike', '34', '56', 'ᚬ'])
     diffs.append(['', "ligne1\nligne2", "bl\abl\\aG", 'blab\tlaD\n'])
     diffs.append(['möre cömplex', '76', '54', '3\\n2'])
     diffs.append(['\a', ""''"", """'""", """''"""])
-    write('mycsv.csv', diffs)
-    read('mycsv.csv', display=True)
-    '''
-
-
-    s = '2le etit ch\nat est lö'
-    t = 'le petit chAt est là>'
-
-
-    process(s, t, C=True)
-
-    
+    write_diffs('mycsv.csv', diffs)
+    read_diffs('mycsv.csv', display=True)
     
 
 

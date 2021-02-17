@@ -6,7 +6,7 @@ import csv
 import sys
 
 def log(logFileName, line):
-    print(line)
+    print(line[:-1])
     logFile = open(logFileName, 'a') 
     logFile.write(line)
     logFile.close()
