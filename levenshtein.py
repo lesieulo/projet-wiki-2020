@@ -286,14 +286,12 @@ def process(r1, r2, seuil=10, cont=10, filtre=1e5):
 
             # Gros: calculer en C
             elif taille > 1000:
-                print("C")
                 write_unicode(r1, r2)
                 subprocess.run(["./lev-alignment.out"])
                 align = levenshtein_alignment_C(r1, r2)
 
             # Petit: calculer en python
             else:
-                print("python")
                 path = levenshtein(r1, r2)
                 align = alignment(r1, r2, path)
 
