@@ -2,7 +2,7 @@ import numpy as np
 import os
 import csv
 import subprocess
-
+import time
 
 ##########################################################
 # Main functions
@@ -11,7 +11,7 @@ import subprocess
 def opti(s, t):
     '''
     Séparation du préfixe commun, et du suffixe commun.
-    '''    
+    '''
     a = 0
     while s[a] == t[a]:
         a += 1
@@ -243,7 +243,7 @@ def differences(s, t, align, prefixe, suffixe, seuil, cont):
     return l_diffs
 
 
-def process(r1, r2, seuil=10, cont=10, filtre=1e5, C=False):
+def process(r1, r2, seuil=10, cont=10, filtre=1e5):
     '''
     Inputs: 2 chaînes de caractères
     Output: liste des différences.
@@ -278,23 +278,32 @@ def process(r1, r2, seuil=10, cont=10, filtre=1e5, C=False):
             diffs = [[r1, r2, prefixe[-cont:], suffixe[:cont]]]
         
         else:
-
-            # Filtre sur la taille
-            if len(r1) * len(r2) > filtre:
-                # print("Lev shape > 100.000")
+            taille = len(r1) * len(r2)
+            
+            # Trop gros: filtrer, ne pas calculer
+            if taille > filtre:
                 return []
 
-            if C:
+            # Gros: calculer en C
+            elif taille > 1000:
+                print("C")
                 write_unicode(r1, r2)
                 subprocess.run(["./lev-alignment.out"])
                 align = levenshtein_alignment_C(r1, r2)
+
+            # Petit: calculer en python
             else:
+                print("python")
                 path = levenshtein(r1, r2)
                 align = alignment(r1, r2, path)
 
-            # compare(r1, r2, align, n_display=130) 
+            # compare(r1, r2, align, n_display=130)
             diffs = differences(r1, r2, align, prefixe, suffixe, seuil, cont)
-    
+            
+            #l = [timers[i+1] - timers[i] for i in range(len(timers)-1)]
+            #l.insert(0, sum(l))
+            #print('\t'.join([str(round(x, 3)) for x in l]))
+
     return diffs
 
 
@@ -403,16 +412,15 @@ def levenshtein_alignment_C(s, t):
 
 if __name__ == "__main__":
     
-    '''
+    
     s = 'niche'
     t = 'chien'
     diffs = process(s, t, seuil=2, cont=2, filtre=1e5)
     print('\nDiffs:')
     for d in diffs:
         print(d)
-    '''
     
-
+    '''
     diffs = []
     diffs.append(['I like to \n ride my red \t bike', '34', '56', 'ᚬ'])
     diffs.append(['', "ligne1\nligne2", "bl\abl\\aG", 'blab\tlaD\n'])
@@ -422,9 +430,15 @@ if __name__ == "__main__":
     read_diffs('mycsv.csv', display=True)
     
 
-
-
-
+    longueurs = ['long', 'treslong']
+    for longueur in longueurs:
+        for k in range(5):
+            fn1 = 'timetests/'+longueur+'1'
+            fn2 = 'timetests/'+longueur+'2'
+            s = open(fn1, "r").read()
+            t = open(fn2, "r").read()
+            process(s, t, filtre=1e10)
+    '''
 
 
 

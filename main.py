@@ -7,7 +7,7 @@ import time
 import csv
 import sys
 
-def find_pairs(pathDump, pageId, seuil, cont, filtre, C):
+def find_pairs(pathDump, pageId, seuil, cont, filtre):
     '''
     Algo: trouve toutes les paires revId-parentId parmi toutes les révisions
         de la page wiki et fait les différences.
@@ -17,13 +17,13 @@ def find_pairs(pathDump, pageId, seuil, cont, filtre, C):
     n = len(pathRevisions)
     list_rev = glob.glob(pathRevisions + '*')
     
-    def diff_process(fn_r1, fn_r2, seuil, cont, filtre, C):
+    def diff_process(fn_r1, fn_r2, seuil, cont, filtre):
 
         rev1 = open(pathRevisions + fn_r1, "r")
         rev2 = open(pathRevisions + fn_r2, "r")
         r1 = rev1.read()
         r2 = rev2.read()
-        diffs = process(r1, r2, seuil, cont, filtre, C)
+        diffs = process(r1, r2, seuil, cont, filtre)
         if diffs:
             fname = pathDump + pageId + '/differences/' + fn_r2 + '.csv'
             write_diffs(fname, diffs)
@@ -37,28 +37,25 @@ def find_pairs(pathDump, pageId, seuil, cont, filtre, C):
         before_rev = glob.glob(pathRevisions + rev[rev.index('-')+1:] + '-*')
         after_rev = glob.glob(pathRevisions + '*-' + rev[:rev.index('-')])
         if before_rev:
-            diff_process(before_rev[0][n:], rev, seuil, cont, filtre, C)
+            diff_process(before_rev[0][n:], rev, seuil, cont, filtre)
         if after_rev:
-            diff_process(rev, after_rev[0][n:], seuil, cont, filtre, C)
+            diff_process(rev, after_rev[0][n:], seuil, cont, filtre)
     return
 
 
-def process_dump(path, dump, seuil=10, cont=10, filtre=1e5, C=False):
+def process_dump(path, dump, seuil=10, cont=10, filtre=1e5):
     '''
     Ecrit les différences de toutes les pages du dump.
     '''
     logFileName = path+'logDiff.txt'
     time0 = time.time()
     
-    langage = 'python'
-    if C:
-        langage = 'C'
-    log(logFileName, '---Writing differences--- ({})\n'.format(langage))
+    log(logFileName, '---Writing differences---\n')
     pages = [f for f in os.listdir(path) if f.isdigit()]
     for pageId in pages:
         if int(pageId) != 15821:
             time1 = time.time()
-            find_pairs(path, pageId, seuil, cont, filtre, C)
+            find_pairs(path, pageId, seuil, cont, filtre)
             time_page = int(time.time() - time1)
             logLine = 'Page {} done in {} seconds\n'.format(pageId, time_page)
             log(logFileName, logLine)
@@ -123,7 +120,7 @@ if __name__ == "__main__":
     
     parse(path, dump)
     
-    process_dump(path, dump, C=True)
+    process_dump(path, dump)
     
     
 
