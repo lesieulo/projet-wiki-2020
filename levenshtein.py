@@ -71,8 +71,8 @@ def levenshtein(s, t):
             elif mini == substitution:
                 pathMatrix[i, j] = 'S'
                 
-    #print(D, '\n')
-    #print(pathMatrix)
+    # print(D, '\n')
+    # print(pathMatrix)
     return pathMatrix
 
 
@@ -294,8 +294,9 @@ def process(r1, r2, seuil=10, cont=10, filtre=1e5):
             else:
                 path = levenshtein(r1, r2)
                 align = alignment(r1, r2, path)
+                print(align)
 
-            # compare(r1, r2, align, n_display=130)
+            compare(r1, r2, align, n_display=130)
             diffs = differences(r1, r2, align, prefixe, suffixe, seuil, cont)
             
             #l = [timers[i+1] - timers[i] for i in range(len(timers)-1)]
@@ -413,30 +414,11 @@ if __name__ == "__main__":
     
     s = 'niche'
     t = 'chien'
-    diffs = process(s, t, seuil=2, cont=2, filtre=1e5)
+    diffs = process(s, t, seuil=0, cont=2, filtre=1e5)
     print('\nDiffs:')
     for d in diffs:
         print(d)
-    
-    '''
-    diffs = []
-    diffs.append(['I like to \n ride my red \t bike', '34', '56', 'ᚬ'])
-    diffs.append(['', "ligne1\nligne2", "bl\abl\\aG", 'blab\tlaD\n'])
-    diffs.append(['möre cömplex', '76', '54', '3\\n2'])
-    diffs.append(['\a', ""''"", """'""", """''"""])
-    write_diffs('mycsv.csv', diffs)
-    read_diffs('mycsv.csv', display=True)
-    
 
-    longueurs = ['long', 'treslong']
-    for longueur in longueurs:
-        for k in range(5):
-            fn1 = 'timetests/'+longueur+'1'
-            fn2 = 'timetests/'+longueur+'2'
-            s = open(fn1, "r").read()
-            t = open(fn2, "r").read()
-            process(s, t, filtre=1e10)
-    '''
 
 
 

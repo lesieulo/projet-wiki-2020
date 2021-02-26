@@ -53,7 +53,7 @@ def process_dump(path, dump, seuil=10, cont=10, filtre=1e5):
     log(logFileName, '---Writing differences---\n')
     pages = [f for f in os.listdir(path) if f.isdigit()]
     for pageId in pages:
-        if int(pageId) != 15821:
+        if int(pageId) != 15821: # TODO: cas où il n'y a pas de différences
             time1 = time.time()
             find_pairs(path, pageId, seuil, cont, filtre)
             time_page = int(time.time() - time1)
@@ -68,49 +68,6 @@ def process_dump(path, dump, seuil=10, cont=10, filtre=1e5):
 
 
 
-
-def process_page(pathDump, pageId, seuil, cont, filtre):
-    ''' Pour une page seule, pas dans le process global
-    Algo: trouve toutes les paires revId-parentId parmi toutes les révisions
-        de la page wiki et fait les différences.
-    '''
-    
-    metadata = []
-    with open(pathDump + pageId + '/metadata.csv', 'r', newline=None) as file:
-        reader = csv.reader(file) 
-        for row in reader:
-            metadata.append(row)
-    
-    for row in metadata:
-        print(row[2])
-    
-    '''
-    pathRevisions = pathDump + pageId + '/revisions/'
-    
-    n = len(pathRevisions)
-    list_rev = glob.glob(pathRevisions + '*')
-    
-    def diff_process(r1, r2, seuil, cont, filtre):
-        path_rev1 = pathRevisions + r1
-        path_rev2 = pathRevisions + r2
-        diffs = process(path_rev1, path_rev2, seuil, cont, filtre)
-        if diffs:
-            fname = pathDump + pageId + '/differences/' + r2 + '.csv'
-            write_diffs(fname, diffs)
-    
-    while list_rev:
-        rev = list_rev.pop(0)[n:]
-        before_rev = glob.glob(pathRevisions + rev[rev.index('-')+1:] + '-*')
-        after_rev = glob.glob(pathRevisions + '*-' + rev[:rev.index('-')])
-        if before_rev:
-            diff_process(before_rev[0][n:], rev, seuil, cont, filtre)
-        if after_rev:
-            diff_process(rev, after_rev[0][n:], seuil, cont, filtre)
-    '''
-    return
-
-
-
 if __name__ == "__main__":
     
 
@@ -121,7 +78,3 @@ if __name__ == "__main__":
     parse(path, dump)
     
     process_dump(path, dump)
-    
-    
-
-
